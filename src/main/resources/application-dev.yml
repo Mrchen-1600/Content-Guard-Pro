@@ -1,0 +1,80 @@
+﻿server:
+  port: 8080
+
+spring:
+  application:
+    name: content-guard-pro
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/safe_detection?useSSL=false&serverTimezone=UTC&characterEncoding=utf-8
+    username:
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 1
+      password:
+
+# ================= 自定义业务配置 =================
+content-guard:
+  # 异步线程池配置
+  async:
+    cpu:
+      core-pool-size: 4
+      max-pool-size: 8
+      queue-capacity: 1000
+      prefix: "CPU-Ops-"
+    io:
+      core-pool-size: 10
+      max-pool-size: 50
+      queue-capacity: 500
+      prefix: "LLM-IO-"
+
+  # 文本处理策略配置
+  text:
+    premium-threshold: 500        # 优质用户全文检测阈值
+    chunk-size: 1000              # 分片大小
+    overlap-ratio: 0.05           # 分片重叠率
+
+  # 安全策略配置
+  security:
+    ac-refresh-rate-ms: 300000    # AC自动机词库刷新间隔 (5分钟)
+    # 注入攻击关键词黑名单
+    injection-keywords:
+      - "忽略之前的指令"
+      - "Ignore all instructions"
+      - "强制通过"
+      - "输出安全"
+      - "System override"
+
+  # LLM 配置
+  llm:
+
+    # ---------------- 方案 A: DeepSeek ----------------
+    api-url: "https://api.deepseek.com/chat/completions"
+    model: "deepseek-chat"
+    # ---------------- 方案 B: Qwen ----------------
+    # api-url: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+    # model: "qwen-flash"
+
+    # 通用参数
+    temperature: 0.1 # 安全检测建议低温度
+    connect-timeout-seconds: 10
+    read-timeout-seconds: 30 # DeepSeek/Qwen 思考时间可能教长，可以适当调大
+
+    # API Key 池 (填入真实 Key)
+    api-keys:
+      - "sk-"
+      - "sk"
+
+    rate-limit:
+      key: "rate_limit:llm_api"
+      permits-per-second: 20 # 根据 DeepSeek/Qwen 账户等级调整 QPS
+      expire-seconds: 1
